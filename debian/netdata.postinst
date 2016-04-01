@@ -1,0 +1,33 @@
+#! /bin/sh
+
+set -e
+
+case "$1" in
+  configure)
+        if [ -z "$2" ]; then
+          if ! getent group netdata >/dev/null; then
+              addgroup --quiet --system netdata
+          fi
+
+          if ! getent passwd netdata >/dev/null; then
+              adduser --quiet --system --ingroup netdata --home /var/lib/netdata --no-create-home netdata
+          fi
+
+          if ! dpkg-statoverride --list /var/lib/netdata >/dev/null 2>&1; then
+              dpkg-statoverride --update --add netdata netdata 0755 /var/lib/netdata
+          fi
+
+          if ! dpkg-statoverride --list /var/cache/netdata >/dev/null 2>&1; then
+              dpkg-statoverride --update --add netdata netdata 0755 /var/cache/netdata
+          fi
+
+          chown -R netdata:netdata /var/lib/netdata
+
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
+

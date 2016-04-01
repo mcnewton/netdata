@@ -1,0 +1,28 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with systemd
+
+override_dh_auto_configure:
+	# Build the configure script if it doesn't already exist
+	[ ! -x ./configure ] && ./autogen.sh
+	dh_auto_configure -- --with-math --with-webdir=/var/lib/netdata
+
+override_dh_install:
+	dh_install
+	# Documentation and JavaScript should not be executable
+	chmod 644 $(CURDIR)/debian/netdata/usr/lib/*/netdata/*/*.js
+	chmod 644 $(CURDIR)/debian/netdata/usr/lib/*/netdata/*/*.md
+	# This config file is also a script
+	chmod 755 $(CURDIR)/debian/netdata/etc/netdata/charts.d.conf
+	# Remove unneeded files
+	rm $(CURDIR)/debian/netdata/var/cache/netdata/.keep
+	rm $(CURDIR)/debian/netdata/var/log/netdata/.keep
+
+override_dh_installinit:
+	cp system/netdata-systemd debian/netdata.service
+	dh_installinit
+
+override_dh_fixperms:
+	dh_fixperms
+	chmod 4755 $(CURDIR)/debian/netdata/usr/lib/*/netdata/plugins.d/apps.plugin
